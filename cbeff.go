@@ -9,6 +9,10 @@ import (
 	//"os"
 )
 
+type CBEFF struct {
+	Header Header
+}
+
 type Time [8]byte
 
 type Header struct {
@@ -113,6 +117,7 @@ func Parse(in io.Reader) (*Header, error) {
 		return nil, err
 	}
 
+	// set up a limit reader on h.BDBLength, feed to objects below
 	fi := FacialInformation{}
 	if err := binary.Read(in, binary.BigEndian, &fi); err != nil {
 		return nil, err
@@ -133,6 +138,9 @@ func Parse(in io.Reader) (*Header, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("%d\n", h.BDBLength)
+	fmt.Printf("%d\n", len(data))
 
 	// fd, err := os.Create("output.bin")
 	// if err != nil {
