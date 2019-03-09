@@ -1,11 +1,12 @@
 package cbeff
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+	//"os"
 )
 
 type Time [8]byte
@@ -28,11 +29,36 @@ type Header struct {
 	Reserved              [4]byte
 }
 
+func (h Header) Validate() error {
+	if h.PatronHeaderVersion != 0x03 {
+		return fmt.Errorf("cbeff: Header.PatronHeaderVersion isn't 3")
+	}
+	return nil
+}
+
 type FacialHeader struct {
 	FormatID     [4]byte
 	VersionID    [4]byte
 	RecordLength uint32
 	NumberFaces  uint16
+}
+
+func (fh FacialHeader) Validate() error {
+	if bytes.Compare(fh.FormatID[:], []byte{'F', 'A', 'C', 0x00}) != 0 {
+		return fmt.Errorf("cbeff: FacialHeader.FormatID isn't FAC\\0")
+	}
+
+	if bytes.Compare(fh.VersionID[:], []byte{'0', '1', '0', 0x00}) != 0 {
+		return fmt.Errorf("cbeff: FacialHeader.VersionID isn't 010\\0")
+	}
+
+	if fh.NumberFaces != 1 {
+		return fmt.Errorf(
+			"cbeff: FacialHeader.NumberFaces isn't 1, and I got confused",
+		)
+	}
+
+	return nil
 }
 
 type FacialInformation struct {
@@ -42,6 +68,14 @@ type FacialInformation struct {
 	Expression              [2]byte
 	Pose                    [3]byte
 	PoseUncertainty         [3]byte
+}
+
+func (fi FacialInformation) Validate() error {
+	// Not currently checking for anything.
+	if fi.NumberOfPoints != 0x00 {
+		return fmt.Errorf("cbeff: FacialInformation.NumberOfPoints isn't 0")
+	}
+	return nil
 }
 
 type ImageInformation struct {
@@ -55,9 +89,19 @@ type ImageInformation struct {
 	Quality    uint16
 }
 
+func (ii ImageInformation) Validate() error {
+	if ii.Type != 0x01 {
+		return fmt.Errorf("cbeff: ImageInformation.Type isn't 1")
+	}
+	return nil
+}
+
 func Parse(in io.Reader) (*Header, error) {
 	h := Header{}
 	if err := binary.Read(in, binary.BigEndian, &h); err != nil {
+		return nil, err
+	}
+	if err := h.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -65,14 +109,23 @@ func Parse(in io.Reader) (*Header, error) {
 	if err := binary.Read(in, binary.BigEndian, &fh); err != nil {
 		return nil, err
 	}
+	if err := fh.Validate(); err != nil {
+		return nil, err
+	}
 
 	fi := FacialInformation{}
 	if err := binary.Read(in, binary.BigEndian, &fi); err != nil {
 		return nil, err
 	}
+	if err := fi.Validate(); err != nil {
+		return nil, err
+	}
 
 	ii := ImageInformation{}
 	if err := binary.Read(in, binary.BigEndian, &ii); err != nil {
+		return nil, err
+	}
+	if err := ii.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -81,12 +134,12 @@ func Parse(in io.Reader) (*Header, error) {
 		return nil, err
 	}
 
-	fd, err := os.Create("output.bin")
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
-	fd.Write(data)
+	// fd, err := os.Create("output.bin")
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer fd.Close()
+	// fd.Write(data)
 
 	_ = data
 	_ = fmt.Printf
