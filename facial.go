@@ -10,8 +10,9 @@ import (
 
 type Facial struct {
 	Header FacialHeader
-	Reader io.Reader
 	Images []Image
+
+	Reader io.Reader
 }
 
 func (c Facial) nextImage() (*Image, error) {
@@ -21,6 +22,16 @@ func (c Facial) nextImage() (*Image, error) {
 	}
 	if err := fi.Validate(); err != nil {
 		return nil, err
+	}
+
+	features := []FacialFeature{}
+	var i uint16 = 0
+	for ; i < fi.NumberOfPoints; i++ {
+		feature := FacialFeature{}
+		if err := binary.Read(c.Reader, binary.BigEndian, &feature); err != nil {
+			return nil, err
+		}
+		features = append(features, feature)
 	}
 
 	ii := ImageInformation{}
@@ -39,6 +50,7 @@ func (c Facial) nextImage() (*Image, error) {
 	return &Image{
 		FacialInformation: fi,
 		ImageInformation:  ii,
+		Features:          features,
 		Data:              data,
 	}, nil
 }
@@ -62,10 +74,14 @@ func (c CBEFF) Facial() (*Facial, error) {
 		)
 	}
 
+	// The LimitReader shouldn't get any trailing data, so we need to make sure
+	// our header doesn't give this thing any more data than it needs.
+	var facialHeaderLength int64 = 10
+
 	f := Facial{
 		Header: fh,
 		Images: []Image{},
-		Reader: io.LimitReader(c.Reader, int64(fh.RecordLength)),
+		Reader: io.LimitReader(c.Reader, int64(fh.RecordLength)-facialHeaderLength),
 	}
 
 	for {
@@ -85,6 +101,7 @@ func (c CBEFF) Facial() (*Facial, error) {
 type Image struct {
 	FacialInformation FacialInformation
 	ImageInformation  ImageInformation
+	Features          []FacialFeature
 	Data              []byte
 }
 
@@ -93,6 +110,15 @@ type FacialHeader struct {
 	VersionID    [4]byte
 	RecordLength uint32
 	NumberFaces  uint16
+}
+
+type FacialFeature struct {
+	Type       uint8
+	MajorPoint uint8
+	MinorPoint uint8
+	X          uint16
+	Y          uint16
+	Reserved   uint8
 }
 
 func (fh FacialHeader) Validate() error {
@@ -123,10 +149,6 @@ type FacialInformation struct {
 }
 
 func (fi FacialInformation) Validate() error {
-	// Not currently checking for anything.
-	if fi.NumberOfPoints != 0x00 {
-		return fmt.Errorf("cbeff: FacialInformation.NumberOfPoints isn't 0, have %d", fi.NumberOfPoints)
-	}
 	return nil
 }
 
