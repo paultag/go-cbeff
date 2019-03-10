@@ -6,14 +6,42 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	//"os"
 )
 
 type CBEFF struct {
 	Header Header
+	Reader io.Reader
+}
+
+func Parse(in io.Reader) (*CBEFF, error) {
+	ret := CBEFF{}
+
+	h := Header{}
+	if err := binary.Read(in, binary.BigEndian, &h); err != nil {
+		return nil, err
+	}
+	if err := h.Validate(); err != nil {
+		return nil, err
+	}
+
+	ret.Header = h
+	totalLength := int64(h.BDBLength) + int64(h.SBLength)
+	ret.Reader = io.LimitReader(in, totalLength)
+
+	return &ret, nil
 }
 
 type Time [8]byte
+type BiometricType [3]byte
+
+func (b BiometricType) Equal(o BiometricType) bool {
+	return bytes.Compare(b[:], o[:]) == 0
+}
+
+var (
+	BiometricTypeFingerprint = BiometricType{0x00, 0x00, 0x08}
+	BiometricTypeFacial      = BiometricType{0x00, 0x00, 0x02}
+)
 
 type Header struct {
 	PatronHeaderVersion   uint8
@@ -25,7 +53,7 @@ type Header struct {
 	BiometricCreationDate Time
 	ValidityNotBefore     Time
 	ValidityNotAfter      Time
-	BiometricType         [3]byte
+	BiometricType         BiometricType
 	BiometricDataType     uint8
 	BiometricDataQuality  uint8
 	Creator               [18]byte
@@ -33,11 +61,91 @@ type Header struct {
 	Reserved              [4]byte
 }
 
+type Facial struct {
+	Header FacialHeader
+	Reader io.Reader
+	Images []Image
+}
+
+func (c Facial) nextImage() (*Image, error) {
+	fi := FacialInformation{}
+	if err := binary.Read(c.Reader, binary.BigEndian, &fi); err != nil {
+		return nil, err
+	}
+	if err := fi.Validate(); err != nil {
+		return nil, err
+	}
+
+	ii := ImageInformation{}
+	if err := binary.Read(c.Reader, binary.BigEndian, &ii); err != nil {
+		return nil, err
+	}
+	if err := ii.Validate(); err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadAll(io.LimitReader(c.Reader, int64(fi.Length)))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Image{
+		FacialInformation: fi,
+		ImageInformation:  ii,
+		Data:              data,
+	}, nil
+}
+
+func (c CBEFF) Facial() (*Facial, error) {
+	if !c.Header.BiometricType.Equal(BiometricTypeFacial) {
+		return nil, fmt.Errorf("cbeff: Header.BiometricType isn't Facial")
+	}
+
+	fh := FacialHeader{}
+	if err := binary.Read(c.Reader, binary.BigEndian, &fh); err != nil {
+		return nil, err
+	}
+	if err := fh.Validate(); err != nil {
+		return nil, err
+	}
+
+	if fh.RecordLength != (c.Header.BDBLength) {
+		return nil, fmt.Errorf(
+			"cbeff: FacialHeader length disagrees with CBEFF length",
+		)
+	}
+
+	f := Facial{
+		Header: fh,
+		Images: []Image{},
+		Reader: io.LimitReader(c.Reader, int64(fh.RecordLength)),
+	}
+
+	for {
+		image, err := f.nextImage()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		f.Images = append(f.Images, *image)
+	}
+
+	return &f, nil
+}
+
 func (h Header) Validate() error {
 	if h.PatronHeaderVersion != 0x03 {
 		return fmt.Errorf("cbeff: Header.PatronHeaderVersion isn't 3")
 	}
 	return nil
+}
+
+type Image struct {
+	FacialInformation FacialInformation
+	ImageInformation  ImageInformation
+	Data              []byte
 }
 
 type FacialHeader struct {
@@ -98,59 +206,4 @@ func (ii ImageInformation) Validate() error {
 		return fmt.Errorf("cbeff: ImageInformation.Type isn't 1")
 	}
 	return nil
-}
-
-func Parse(in io.Reader) (*Header, error) {
-	h := Header{}
-	if err := binary.Read(in, binary.BigEndian, &h); err != nil {
-		return nil, err
-	}
-	if err := h.Validate(); err != nil {
-		return nil, err
-	}
-
-	fh := FacialHeader{}
-	if err := binary.Read(in, binary.BigEndian, &fh); err != nil {
-		return nil, err
-	}
-	if err := fh.Validate(); err != nil {
-		return nil, err
-	}
-
-	// set up a limit reader on h.BDBLength, feed to objects below
-	fi := FacialInformation{}
-	if err := binary.Read(in, binary.BigEndian, &fi); err != nil {
-		return nil, err
-	}
-	if err := fi.Validate(); err != nil {
-		return nil, err
-	}
-
-	ii := ImageInformation{}
-	if err := binary.Read(in, binary.BigEndian, &ii); err != nil {
-		return nil, err
-	}
-	if err := ii.Validate(); err != nil {
-		return nil, err
-	}
-
-	data, err := ioutil.ReadAll(io.LimitReader(in, int64(fi.Length)))
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("%d\n", h.BDBLength)
-	fmt.Printf("%d\n", len(data))
-
-	// fd, err := os.Create("output.bin")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer fd.Close()
-	// fd.Write(data)
-
-	_ = data
-	_ = fmt.Printf
-
-	return nil, nil
 }

@@ -35,9 +35,15 @@ func main() {
 	_, err = asn1.Unmarshal(rv.Bytes, &rvN)
 	ohshit(err)
 
-	h, err := cbeff.Parse(bytes.NewReader(rvN.Bytes))
+	c, err := cbeff.Parse(bytes.NewReader(rvN.Bytes))
 	ohshit(err)
 
-	_ = h
+	f, err := c.Facial()
+	ohshit(err)
+
+	for _, image := range f.Images {
+		fmt.Printf("%s\n", image)
+	}
+
 	_ = fmt.Printf
 }
