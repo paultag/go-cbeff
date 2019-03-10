@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"time"
 )
 
 type CBEFF struct {
@@ -31,6 +32,22 @@ func Parse(in io.Reader) (*CBEFF, error) {
 }
 
 type Time [8]byte
+
+func (t Time) Time() (*time.Time, error) {
+	if t[7] != 'Z' {
+		return nil, fmt.Errorf("cbeff: Time doesn't end with Z")
+	}
+	year := (int(t[0]) * 100) + int(t[1])
+	month := time.Month(t[2])
+	day := int(t[3])
+	hour := int(t[4])
+	minute := int(t[5])
+	second := int(t[6])
+
+	when := time.Date(year, month, day, hour, minute, second, 0, time.UTC)
+	return &when, nil
+}
+
 type BiometricType [3]byte
 
 func (b BiometricType) Equal(o BiometricType) bool {

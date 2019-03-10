@@ -38,6 +38,22 @@ func main() {
 	c, err := cbeff.Parse(bytes.NewReader(rvN.Bytes))
 	ohshit(err)
 
+	creation, err := c.Header.BiometricCreationDate.Time()
+	ohshit(err)
+
+	notBefore, err := c.Header.ValidityNotBefore.Time()
+	ohshit(err)
+
+	notAfter, err := c.Header.ValidityNotAfter.Time()
+	ohshit(err)
+
+	fmt.Printf(
+		"%s\n%s\n%s\n",
+		creation, notBefore, notAfter,
+	)
+
+	return
+
 	f, err := c.Facial()
 	ohshit(err)
 
