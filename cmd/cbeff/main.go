@@ -42,7 +42,11 @@ func main() {
 	ohshit(err)
 
 	for _, image := range f.Images {
-		fmt.Printf("%s\n", image)
+		fd, err := os.Create("test.j2")
+		ohshit(err)
+		defer fd.Close()
+		fd.Write(image.Data)
+		fd.Close()
 	}
 
 	_ = fmt.Printf
