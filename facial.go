@@ -125,7 +125,7 @@ type FacialInformation struct {
 func (fi FacialInformation) Validate() error {
 	// Not currently checking for anything.
 	if fi.NumberOfPoints != 0x00 {
-		return fmt.Errorf("cbeff: FacialInformation.NumberOfPoints isn't 0")
+		return fmt.Errorf("cbeff: FacialInformation.NumberOfPoints isn't 0, have %d", fi.NumberOfPoints)
 	}
 	return nil
 }
