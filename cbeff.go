@@ -99,10 +99,12 @@ func (b BiometricType) Equal(o BiometricType) bool {
 }
 
 var (
-	//
+	// The CBEFF file contains fingerprint information. This may either be
+	// an enrollment or minutiae.
 	BiometricTypeFingerprint = BiometricType{0x00, 0x00, 0x08}
 
-	//
+	// The CBEFF file contains the facial photos to be used for visual
+	// confirmation of the individual.
 	BiometricTypeFacial = BiometricType{0x00, 0x00, 0x02}
 )
 
