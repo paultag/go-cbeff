@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/asn1"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -23,19 +21,7 @@ func main() {
 	bytez, err := ioutil.ReadAll(fd)
 	ohshit(err)
 
-	rv := asn1.RawValue{}
-	rest, err := asn1.Unmarshal(bytez, &rv)
-	ohshit(err)
-
-	if len(rest) != 0 {
-		panic("Trailing garbage")
-	}
-
-	rvN := asn1.RawValue{}
-	_, err = asn1.Unmarshal(rv.Bytes, &rvN)
-	ohshit(err)
-
-	c, err := cbeff.Parse(bytes.NewReader(rvN.Bytes))
+	c, err := cbeff.ParsePIV(bytez)
 	ohshit(err)
 
 	f, err := c.Facial()
