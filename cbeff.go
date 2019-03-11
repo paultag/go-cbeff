@@ -99,10 +99,14 @@ func (b BiometricType) Equal(o BiometricType) bool {
 }
 
 var (
+	//
 	BiometricTypeFingerprint = BiometricType{0x00, 0x00, 0x08}
-	BiometricTypeFacial      = BiometricType{0x00, 0x00, 0x02}
+
+	//
+	BiometricTypeFacial = BiometricType{0x00, 0x00, 0x02}
 )
 
+//
 type Header struct {
 	PatronHeaderVersion   uint8
 	SBHSecurityOptions    uint8
@@ -121,6 +125,7 @@ type Header struct {
 	Reserved              [4]byte
 }
 
+//
 func (h Header) Validate() error {
 	if h.PatronHeaderVersion != 0x03 {
 		return fmt.Errorf("cbeff: Header.PatronHeaderVersion isn't 3")

@@ -28,13 +28,18 @@ import (
 	"io/ioutil"
 )
 
+//
 type Facial struct {
+	//
 	Header FacialHeader
+	//
 	Images []Image
 
+	//
 	Reader io.Reader
 }
 
+//
 func (c Facial) nextImage() (*Image, error) {
 	fi := FacialInformation{}
 	if err := binary.Read(c.Reader, binary.BigEndian, &fi); err != nil {
@@ -75,6 +80,7 @@ func (c Facial) nextImage() (*Image, error) {
 	}, nil
 }
 
+//
 func (c CBEFF) Facial() (*Facial, error) {
 	if !c.Header.BiometricType.Equal(BiometricTypeFacial) {
 		return nil, fmt.Errorf("cbeff: Header.BiometricType isn't Facial")
@@ -118,13 +124,19 @@ func (c CBEFF) Facial() (*Facial, error) {
 	return &f, nil
 }
 
+//
 type Image struct {
+	//
 	FacialInformation FacialInformation
-	ImageInformation  ImageInformation
-	Features          []FacialFeature
-	Data              []byte
+	//
+	ImageInformation ImageInformation
+	//
+	Features []FacialFeature
+	//
+	Data []byte
 }
 
+//
 type FacialHeader struct {
 	FormatID     [4]byte
 	VersionID    [4]byte
@@ -132,6 +144,7 @@ type FacialHeader struct {
 	NumberFaces  uint16
 }
 
+//
 type FacialFeature struct {
 	Type       uint8
 	MajorPoint uint8
@@ -141,6 +154,7 @@ type FacialFeature struct {
 	Reserved   uint8
 }
 
+//
 func (fh FacialHeader) Validate() error {
 	if bytes.Compare(fh.FormatID[:], []byte{'F', 'A', 'C', 0x00}) != 0 {
 		return fmt.Errorf("cbeff: FacialHeader.FormatID isn't FAC\\0")
@@ -159,6 +173,7 @@ func (fh FacialHeader) Validate() error {
 	return nil
 }
 
+//
 type FacialInformation struct {
 	Length                  uint32
 	NumberOfPoints          uint16
@@ -168,10 +183,12 @@ type FacialInformation struct {
 	PoseUncertainty         [3]byte
 }
 
+//
 func (fi FacialInformation) Validate() error {
 	return nil
 }
 
+//
 type ImageInformation struct {
 	Type       uint8
 	DataType   uint8
@@ -183,6 +200,7 @@ type ImageInformation struct {
 	Quality    uint16
 }
 
+//
 func (ii ImageInformation) Validate() error {
 	if ii.Type != 0x01 {
 		return fmt.Errorf("cbeff: ImageInformation.Type isn't 1")
