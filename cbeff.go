@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-package cbeff
+package cbeff // import "pault.ag/go/cbeff"
 
 import (
 	"bytes"

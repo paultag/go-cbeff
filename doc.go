@@ -33,6 +33,6 @@
 // provided examples of PIV II data and documentation. As such this may be
 // incomplete or slightly wrong in some aspects. Please submit pull requests
 // as issues are triaged.
-package cbeff
+package cbeff // import "pault.ag/go/cbeff"
 
 // vim: foldmethod=marker
