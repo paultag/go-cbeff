@@ -1,3 +1,23 @@
+// {{{ Copyright (c) Paul R. Tagliamonte <paultag@gmail.com>, 2019
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE. }}}
+
 package cbeff
 
 import (
@@ -5,14 +25,32 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"time"
 )
 
+// CBEFF is an ecapsulation of a CBEFF serialized file. This will allow you
+// to dispatch based on the Header.BiometricType, and extract the information
+// depending on what type of CBEFF entry it is.
 type CBEFF struct {
+	// CBEFF file metadata, such as what kind of file this is, sizes of the
+	// various payloads, and information such as creator, who the metric is of,
+	// and validity time.
 	Header Header
+
+	// io.Reader over this CBEFF entry. This reader must be fully read before
+	// moving onto any other files on the same Reader.
 	Reader io.Reader
 }
 
+// "Close" the file by reading the entirety of the LimitReader.
+func (c CBEFF) Close() error {
+	_, err := io.Copy(ioutil.Discard, c.Reader)
+	return err
+}
+
+// Given an io.Reader, parse the CBEFF header, and construct he CBEFF file
+// encapsulation.
 func Parse(in io.Reader) (*CBEFF, error) {
 	ret := CBEFF{}
 
@@ -31,11 +69,15 @@ func Parse(in io.Reader) (*CBEFF, error) {
 	return &ret, nil
 }
 
+// CBEFF Time representation is a 8 octet array, in the format of
+// Y Y M D h m s Z, where Z is a literal ASCII 'Z', and the other values
+// being the uint8 value for that position.
 type Time [8]byte
 
-func (t Time) Time() (*time.Time, error) {
+// Turn the CBEFF Time into a Golang time.Time.
+func (t Time) Time() (time.Time, error) {
 	if t[7] != 'Z' {
-		return nil, fmt.Errorf("cbeff: Time doesn't end with Z")
+		return time.Time{}, fmt.Errorf("cbeff: Time doesn't end with Z")
 	}
 	year := (int(t[0]) * 100) + int(t[1])
 	month := time.Month(t[2])
@@ -44,12 +86,14 @@ func (t Time) Time() (*time.Time, error) {
 	minute := int(t[5])
 	second := int(t[6])
 
-	when := time.Date(year, month, day, hour, minute, second, 0, time.UTC)
-	return &when, nil
+	return time.Date(year, month, day, hour, minute, second, 0, time.UTC), nil
 }
 
+// BiometricType indicates the type of biometric stored in the CBEFF, such as
+// Face photos, or Fingerprints.
 type BiometricType [3]byte
 
+// Check to see if the two BiometricTypes are the same.
 func (b BiometricType) Equal(o BiometricType) bool {
 	return bytes.Compare(b[:], o[:]) == 0
 }
@@ -83,3 +127,5 @@ func (h Header) Validate() error {
 	}
 	return nil
 }
+
+// vim: foldmethod=marker
