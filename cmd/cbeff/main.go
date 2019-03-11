@@ -28,6 +28,8 @@ func main() {
 	ohshit(err)
 
 	for _, image := range f.Images {
+		fmt.Printf("%s\n", image.FacialInformation.BiographicalInformation)
+
 		fd, err := os.Create("test.j2")
 		ohshit(err)
 		defer fd.Close()

@@ -173,11 +173,70 @@ func (fh FacialHeader) Validate() error {
 	return nil
 }
 
+type BiographicalInformationGender uint8
+
+func (b BiographicalInformationGender) String() string {
+	// Please don't blame me for these mappings.
+	name, ok := map[uint8]string{
+		0: "unspecified", 1: "male",
+		2: "female", 0xFF: "transgender",
+	}[uint8(b)]
+	if !ok {
+		return "unknown"
+	}
+	return name
+}
+
+type BiographicalInformationEyeColor uint8
+
+func (b BiographicalInformationEyeColor) String() string {
+	name, ok := map[uint8]string{
+		0: "unspecified", 0x01: "black", 0x02: "blue", 0x03: "brown",
+		0x04: "gray", 0x05: "green", 0x06: "multi-Colored", 0x07: "pink",
+		0xFF: "other",
+	}[uint8(b)]
+	if !ok {
+		return "unknown"
+	}
+	return name
+}
+
+type BiographicalInformationHairColor uint8
+
+func (b BiographicalInformationHairColor) String() string {
+	name, ok := map[uint8]string{
+		0:    "unspecified",
+		0x01: "Bald", 0x02: "Black", 0x03: "Blonde", 0x04: "Brown",
+		0x05: "Gray", 0x06: "White", 0x07: "Red",
+	}[uint8(b)]
+	if !ok {
+		return "unknown"
+	}
+	return name
+}
+
+type BiographicalInformation struct {
+	Gender     BiographicalInformationGender
+	EyeColor   BiographicalInformationEyeColor
+	HairColor  BiographicalInformationHairColor
+	Properties [3]byte
+}
+
+func (b BiographicalInformation) String() string {
+	return fmt.Sprintf(
+		"gender=%s eyeColor=%s hairColor=%s properties=%b",
+		b.Gender.String(),
+		b.EyeColor.String(),
+		b.HairColor.String(),
+		b.Properties,
+	)
+}
+
 //
 type FacialInformation struct {
 	Length                  uint32
 	NumberOfPoints          uint16
-	BiographicalInformation [6]byte
+	BiographicalInformation BiographicalInformation
 	Expression              [2]byte
 	Pose                    [3]byte
 	PoseUncertainty         [3]byte
