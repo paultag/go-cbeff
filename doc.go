@@ -18,7 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
+// CBEFF (Common Biometric Exchange Formats Framework) is a set of ISO
+// standards defining an approach to facilitate serialisation and sharing of
+// biometric data in an implementation agnostic manner. This is achieved
+// through use of a data structure which both describes, and contains,
+// biometric data.
 //
+// This format is most notibly used as part of the US Government's FIPS 201
+// PIV II smartcard.
+//
+// Currently, only Facial support has been partially implemented, due to
+// the paywalled documetation on large swaths of this encoding.
+// This package has been implemented only based on freely avalible US Government
+// provided examples of PIV II data and documentation. As such this may be
+// incomplete or slightly wrong in some aspects. Please submit pull requests
+// as issues are triaged.
 package cbeff
 
 // vim: foldmethod=marker
