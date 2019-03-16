@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"image/png"
 	"io/ioutil"
 	"os"
 
 	"pault.ag/go/cbeff"
+	"pault.ag/go/cbeff/jpeg2000"
 )
 
 func ohshit(err error) {
@@ -30,11 +32,16 @@ func main() {
 	for _, image := range f.Images {
 		fmt.Printf("%s\n", image.FacialInformation.BiographicalInformation)
 
-		fd, err := os.Create("test.j2")
+		img, err := jpeg2000.Parse(image.Data)
+		ohshit(err)
+
+		fd, err := os.Create("test.png")
 		ohshit(err)
 		defer fd.Close()
-		fd.Write(image.Data)
-		fd.Close()
+		if err := png.Encode(fd, img); err != nil {
+			fd.Close()
+			ohshit(err)
+		}
 	}
 
 	_ = fmt.Printf
