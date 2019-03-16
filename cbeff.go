@@ -27,6 +27,8 @@ import (
 	"io"
 	"io/ioutil"
 	"time"
+
+	"pault.ag/go/fasc"
 )
 
 // CBEFF is an ecapsulation of a CBEFF serialized file. This will allow you
@@ -125,6 +127,10 @@ type Header struct {
 	Creator               [18]byte
 	FASC                  [25]byte
 	Reserved              [4]byte
+}
+
+func (h Header) ParseFASC() (*fasc.FASC, error) {
+	return fasc.Parse(h.FASC[:])
 }
 
 //

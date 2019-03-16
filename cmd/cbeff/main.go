@@ -26,6 +26,11 @@ func main() {
 	c, err := cbeff.ParsePIV(bytez)
 	ohshit(err)
 
+	fasc, err := c.Header.ParseFASC()
+	ohshit(err)
+
+	fmt.Printf("%s\n", fasc)
+
 	f, err := c.Facial()
 	ohshit(err)
 
