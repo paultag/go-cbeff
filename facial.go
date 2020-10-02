@@ -28,18 +28,13 @@ import (
 	"io/ioutil"
 )
 
-//
+// Facial contains a series of images and annotations.
 type Facial struct {
-	//
 	Header FacialHeader
-	//
 	Images []Image
-
-	//
 	Reader io.Reader
 }
 
-//
 func (c Facial) nextImage() (*Image, error) {
 	fi := FacialInformation{}
 	if err := binary.Read(c.Reader, binary.BigEndian, &fi); err != nil {
@@ -80,7 +75,9 @@ func (c Facial) nextImage() (*Image, error) {
 	}, nil
 }
 
-//
+// Facial will parse the Facial record contained in the CBEFF entry. If the
+// CBEFF header is not of type BiometricTypeFacial, this function will
+// return an error and fail to parse the Facial data.
 func (c CBEFF) Facial() (*Facial, error) {
 	if !c.Header.BiometricType.Equal(BiometricTypeFacial) {
 		return nil, fmt.Errorf("cbeff: Header.BiometricType isn't Facial")
@@ -124,19 +121,16 @@ func (c CBEFF) Facial() (*Facial, error) {
 	return &f, nil
 }
 
-//
+// Image represents annotations and metadata attached to the image contained
+// within.
 type Image struct {
-	//
 	FacialInformation FacialInformation
-	//
-	ImageInformation ImageInformation
-	//
-	Features []FacialFeature
-	//
-	Data []byte
+	ImageInformation  ImageInformation
+	Features          []FacialFeature
+	Data              []byte
 }
 
-//
+// FacialHeader contains information about the Facial record to follow.
 type FacialHeader struct {
 	FormatID     [4]byte
 	VersionID    [4]byte
@@ -144,7 +138,7 @@ type FacialHeader struct {
 	NumberFaces  uint16
 }
 
-//
+// FacialFeature contains an annotation on the attached Image.
 type FacialFeature struct {
 	Type       uint8
 	MajorPoint uint8
@@ -154,7 +148,8 @@ type FacialFeature struct {
 	Reserved   uint8
 }
 
-//
+// Validate will ensure that the FacialHeader is well formatted and understood
+// by this library.
 func (fh FacialHeader) Validate() error {
 	if bytes.Compare(fh.FormatID[:], []byte{'F', 'A', 'C', 0x00}) != 0 {
 		return fmt.Errorf("cbeff: FacialHeader.FormatID isn't FAC\\0")
@@ -173,8 +168,12 @@ func (fh FacialHeader) Validate() error {
 	return nil
 }
 
+// BiographicalInformationGender contains inforamtion on the subject of the
+// Image's "Gender". Whatever this could possibly mean, it's not something
+// to be used if it's avoidable.
 type BiographicalInformationGender uint8
 
+// String will return a human readable string.
 func (b BiographicalInformationGender) String() string {
 	// Please don't blame me for these mappings.
 	name, ok := map[uint8]string{
@@ -187,8 +186,11 @@ func (b BiographicalInformationGender) String() string {
 	return name
 }
 
+// BiographicalInformationEyeColor will return the eye color of the
+// subject of the Image.
 type BiographicalInformationEyeColor uint8
 
+// String will return a human readable string.
 func (b BiographicalInformationEyeColor) String() string {
 	name, ok := map[uint8]string{
 		0: "unspecified", 0x01: "black", 0x02: "blue", 0x03: "brown",
@@ -201,8 +203,11 @@ func (b BiographicalInformationEyeColor) String() string {
 	return name
 }
 
+// BiographicalInformationHairColor will return the hair color of the subject
+// of the Image.
 type BiographicalInformationHairColor uint8
 
+// String will return a human readable string.
 func (b BiographicalInformationHairColor) String() string {
 	name, ok := map[uint8]string{
 		0:    "unspecified",
@@ -215,6 +220,9 @@ func (b BiographicalInformationHairColor) String() string {
 	return name
 }
 
+// BiographicalInformation contains information about the individual who is
+// the subject of the Image. This is not frequently used, and likely should
+// not be relied on.
 type BiographicalInformation struct {
 	Gender     BiographicalInformationGender
 	EyeColor   BiographicalInformationEyeColor
@@ -222,6 +230,7 @@ type BiographicalInformation struct {
 	Properties [3]byte
 }
 
+// String will return a human readable string.
 func (b BiographicalInformation) String() string {
 	return fmt.Sprintf(
 		"gender=%s eyeColor=%s hairColor=%s properties=%b",
@@ -232,7 +241,8 @@ func (b BiographicalInformation) String() string {
 	)
 }
 
-//
+// FacialInformation contains information regarding the Image this is
+// attached to.
 type FacialInformation struct {
 	Length                  uint32
 	NumberOfPoints          uint16
@@ -242,12 +252,14 @@ type FacialInformation struct {
 	PoseUncertainty         [3]byte
 }
 
-//
+// Validate will ensure that this library understands and can properly
+// process this data.
 func (fi FacialInformation) Validate() error {
 	return nil
 }
 
-//
+// ImageInformation contains metadata regarding the format of the image
+// data.
 type ImageInformation struct {
 	Type       uint8
 	DataType   uint8
@@ -259,7 +271,8 @@ type ImageInformation struct {
 	Quality    uint16
 }
 
-//
+// Validate will ensure that this library understands and can properly
+// process this data.
 func (ii ImageInformation) Validate() error {
 	if ii.Type != 0x01 {
 		return fmt.Errorf("cbeff: ImageInformation.Type isn't 1")

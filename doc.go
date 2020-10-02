@@ -18,8 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE. }}}
 
-// CBEFF (Common Biometric Exchange Formats Framework) is a set of ISO
-// standards defining an approach to facilitate serialisation and sharing of
+// Package cbeff contains helpers to process CBEFF (Common Biometric Exchange
+// Formats Framework) data. CBEFF is a set of ISO standards defining an
+// approach to facilitate serialisation and sharing of
 // biometric data in an implementation agnostic manner. This is achieved
 // through use of a data structure which both describes, and contains,
 // biometric data.

@@ -25,6 +25,9 @@
 // As a result, this has been subpackaged, since using this package will
 // require cgo linking to imagick. On GNU/Linux this means installing
 // the `libmagickwand-dev` package.
+
+// Package jpeg2000 contains a thin wrapper on top of imagick to convert
+// JPEG2000 bytes to a golang image.Image.
 package jpeg2000
 
 import (
@@ -35,8 +38,7 @@ import (
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
-// "Parse" (really have image magick convert) a JEPG 2000 into an image.Image
-// (internally, I chose PNG because why the heck not. We all like PNGs)
+// Parse a JEPG 2000 into an image.Image.
 func Parse(data []byte) (image.Image, error) {
 	imagick.Initialize()
 	defer imagick.Terminate()

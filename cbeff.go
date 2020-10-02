@@ -45,14 +45,14 @@ type CBEFF struct {
 	Reader io.Reader
 }
 
-// "Close" the file by reading the entirety of the LimitReader.
+// Close the file.
 func (c CBEFF) Close() error {
 	_, err := io.Copy(ioutil.Discard, c.Reader)
 	return err
 }
 
-// Given an io.Reader, parse the CBEFF header, and construct he CBEFF file
-// encapsulation.
+// Parse will read the CBEFF data from the io.Reader, parse the CBEFF header,
+// and construct he CBEFF file encapsulation.
 func Parse(in io.Reader) (*CBEFF, error) {
 	ret := CBEFF{}
 
@@ -71,12 +71,12 @@ func Parse(in io.Reader) (*CBEFF, error) {
 	return &ret, nil
 }
 
-// CBEFF Time representation is a 8 octet array, in the format of
+// Time represents CBEFF Time as an 8 octet array, in the format of
 // Y Y M D h m s Z, where Z is a literal ASCII 'Z', and the other values
 // being the uint8 value for that position.
 type Time [8]byte
 
-// Turn the CBEFF Time into a Golang time.Time.
+// Time will return CBEFF Time into a Golang time.Time.
 func (t Time) Time() (time.Time, error) {
 	if t[7] != 'Z' {
 		return time.Time{}, fmt.Errorf("cbeff: Time doesn't end with Z")
@@ -95,22 +95,23 @@ func (t Time) Time() (time.Time, error) {
 // Face photos, or Fingerprints.
 type BiometricType [3]byte
 
-// Check to see if the two BiometricTypes are the same.
+// Equal will check to see if the two BiometricTypes are the same.
 func (b BiometricType) Equal(o BiometricType) bool {
 	return bytes.Compare(b[:], o[:]) == 0
 }
 
 var (
-	// The CBEFF file contains fingerprint information. This may either be
-	// an enrollment or minutiae.
+	// BiometricTypeFingerprint indicates the CBEFF file contains fingerprint
+	// information. This may either be an enrollment or minutiae.
 	BiometricTypeFingerprint = BiometricType{0x00, 0x00, 0x08}
 
-	// The CBEFF file contains the facial photos to be used for visual
-	// confirmation of the individual.
+	// BiometricTypeFacial indicates the CBEFF file contains the facial photos
+	// to be used for visual confirmation of the individual.
 	BiometricTypeFacial = BiometricType{0x00, 0x00, 0x02}
 )
 
-//
+// Header contains information regarding the CBEFF data contained within
+// the data stream.
 type Header struct {
 	PatronHeaderVersion   uint8
 	SBHSecurityOptions    uint8
@@ -129,11 +130,13 @@ type Header struct {
 	Reserved              [4]byte
 }
 
+// ParseFASC will read the FASC bytes, and return a parsed pault.ag/go/fasc.Fasc
+// struct.
 func (h Header) ParseFASC() (*fasc.FASC, error) {
 	return fasc.Parse(h.FASC[:])
 }
 
-//
+// Validate will ensure that the header is understood by this library.
 func (h Header) Validate() error {
 	if h.PatronHeaderVersion != 0x03 {
 		return fmt.Errorf("cbeff: Header.PatronHeaderVersion isn't 3")
